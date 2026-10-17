@@ -2,7 +2,7 @@ name: Canvas Telegram Bot
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '21 */3 * * *'
   workflow_dispatch:
 
 jobs:
