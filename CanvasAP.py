@@ -90,5 +90,3 @@ except Exception as e:
 
 print("\nKontrol tamamlandı. Bot kapanıyor (GitHub Actions zamanı gelince tekrar başlatacak).")
 
-    # 3 saatte bir kontrol et (Test için burayı 60 yapabilirsiniz)
-    time.sleep(10800)
