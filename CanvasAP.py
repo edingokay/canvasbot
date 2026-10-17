@@ -37,52 +37,58 @@ def telegram_mesaj_gonder(mesaj):
         print(f"Bağlantı hatası: {e}")
 
 # --- ANA PROGRAM ---
+import os
+
 canvas = Canvas(CANVAS_API_URL, CANVAS_API_KEY)
 user = canvas.get_current_user()
 
-print(f"Bot aktif! {user.name} için duyurular 7/24 takip ediliyor...\n")
+print(f"Bot aktif! {user.name} için duyurular kontrol ediliyor...\n")
 
-# Bot ilk çalıştırıldığında mevcut eski duyuruları hafızaya kaydedip spam atmaması için:
+# Botun gönderdiği duyuruları hatırlaması için txt dosyası kullanıyoruz
+DOSYA_ADI = "gonderilen_duyurular.txt"
+gonderilen_duyurular = set()
+
+# Dosya varsa içindeki eski ID'leri okuyup listeye ekle
+if os.path.exists(DOSYA_ADI):
+    with open(DOSYA_ADI, "r") as dosya:
+        for satir in dosya:
+            if satir.strip().isdigit():
+                gonderilen_duyurular.add(int(satir.strip()))
+
 try:
     courses = user.get_courses(enrollment_state="active")
     for course in courses:
         try:
             announcements = list(canvas.get_announcements(context_codes=[f"course_{course.id}"]))
-            for ann in announcements:
-                gonderilen_duyurular.add(ann.id)
+            
+            # Duyuruları eskiden yeniye sıralayalım
+            announcements.reverse()
+            
+            for announcement in announcements:
+                # Daha önce gönderilmediyse (yani listede yoksa):
+                if announcement.id not in gonderilen_duyurular:
+                    temiz_icerik = html_temizle(announcement.message)
+
+                    mesaj = f"🔔 **YENİ CANVAS DUYURUSU**\n\n"
+                    mesaj += f"📚 **Ders:** {course.name}\n"
+                    mesaj += f"📌 **Başlık:** {announcement.title}\n\n"
+                    mesaj += f"{temiz_icerik}"
+
+                    # Telegram'a gönder
+                    telegram_mesaj_gonder(mesaj)
+
+                    # Listeye ekle ve txt dosyasına kalıcı olarak yaz
+                    gonderilen_duyurular.add(announcement.id)
+                    with open(DOSYA_ADI, "a") as dosya:
+                        dosya.write(f"{announcement.id}\n")
+                        
         except Exception:
             continue
-    print(f"Sistem hazır. Mevcut {len(gonderilen_duyurular)} eski duyuru hafızaya alındı, sadece *yeni* duyurular bildirilecek.\n")
-except Exception:
-    pass
 
-# Sürekli kontrol döngüsü
-while True:
-    try:
-        courses = user.get_courses(enrollment_state="active")
-        for course in courses:
-            try:
-                announcements = list(canvas.get_announcements(context_codes=[f"course_{course.id}"]))
-                for announcement in announcements:
-                    # Eğer bu duyuru daha önce gönderilmediyse:
-                    if announcement.id not in gonderilen_duyurular:
-                        temiz_icerik = html_temizle(announcement.message)
+except Exception as e:
+    print(f"Kontrol sırasında hata oluştu: {e}")
 
-                        mesaj = f"🔔 **YENİ CANVAS DUYURUSU**\n\n"
-                        mesaj += f"📚 **Ders:** {course.name}\n"
-                        mesaj += f"📌 **Başlık:** {announcement.title}\n\n"
-                        mesaj += f"{temiz_icerik}"
-
-                        # Telegram'a gönder
-                        telegram_mesaj_gonder(mesaj)
-
-                        # Gönderilenler listesine ekle ki bir daha atmasın
-                        gonderilen_duyurular.add(announcement.id)
-            except Exception:
-                continue
-
-    except Exception as e:
-        print(f"Kontrol sırasında hata oluştu: {e}")
+print("\nKontrol tamamlandı. Bot kapanıyor (GitHub Actions zamanı gelince tekrar başlatacak).")
 
     # 3 saatte bir kontrol et (Test için burayı 60 yapabilirsiniz)
     time.sleep(10800)
