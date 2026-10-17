@@ -2,12 +2,14 @@ name: Canvas Telegram Bot
 
 on:
   schedule:
-    - cron: '0 */3 * * *' # Her 3 saatte bir otomatik çalışır
-  workflow_dispatch: # İsterseniz GitHub sitesinden el ile de tetikleyebilirsiniz
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # GitHub'ın txt dosyasını depoya kaydetmesi için gereken izin
     steps:
       - name: Kodları Depodan Çek
         uses: actions/checkout@v4
@@ -28,3 +30,11 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python CanvasAP.py
+
+      - name: Gönderilen Duyuruları Hafızaya Kaydet
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add gonderilen_duyurular.txt
+          git commit -m "Hafıza güncellendi" || echo "Yeni duyuru yok"
+          git push
