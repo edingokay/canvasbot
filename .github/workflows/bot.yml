@@ -1,0 +1,30 @@
+name: Canvas Telegram Bot
+
+on:
+  schedule:
+    - cron: '0 */3 * * *' # Her 3 saatte bir otomatik çalışır
+  workflow_dispatch: # İsterseniz GitHub sitesinden el ile de tetikleyebilirsiniz
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodları Depodan Çek
+        uses: actions/checkout@v4
+
+      - name: Python Ortamını Kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gerekli Kütüphaneleri Yükle
+        run: |
+          pip install canvasapi requests
+
+      - name: Botu Çalıştır
+        env:
+          CANVAS_API_KEY: ${{ secrets.CANVAS_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python CanvasAP.py
